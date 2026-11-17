@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LANTERNFALL — The Last Beacon</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./styles.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <div id="vignette"></div>
+  <div id="dmg-layer"></div>
+
+  <div id="hud" class="hidden">
+    <div id="crosshair"><span></span></div>
+    <div id="hitmarker"></div>
+    <div id="banner" class="hidden"></div>
+    <div id="objective-box">
+      <div id="objective-title">OBJECTIVE</div>
+      <div id="objective-text">Relight the lanterns</div>
+      <div id="charge-wrap" class="hidden"><div id="charge-bar"></div><span id="charge-num">0%</span></div>
+    </div>
+    <div id="compass"><div id="compass-strip"></div><div id="compass-needle">▲</div></div>
+    <div id="score-box">SCORE <span id="score">0</span><span id="score-sub"></span></div>
+    <div id="timer-box" class="hidden">⏳ <span id="timer">0:00</span></div>
+    <div id="squad-box">
+      <div class="mate" id="mate-0"><span class="mate-dot"></span><span class="mate-name">BRAM</span><div class="mate-hp"><div class="mate-hp-fill"></div></div><span class="mate-state">READY</span></div>
+      <div class="mate" id="mate-1"><span class="mate-dot"></span><span class="mate-name">SEF</span><div class="mate-hp"><div class="mate-hp-fill"></div></div><span class="mate-state">READY</span></div>
+    </div>
+    <div id="player-box">
+      <div id="hp-wrap"><div id="hp-bar"></div><span id="hp-num">100</span></div>
+      <div id="ammo-box"><span id="ammo">24</span><span id="ammo-reserve">/ ∞</span><span id="reload-hint" class="hidden">RELOADING…</span></div>
+      <div id="grenade-box">◉ <span id="grenades">3</span></div>
+      <div id="light-box"><span id="light-icon">🏮</span><span id="light-text">IN THE LIGHT</span></div>
+    </div>
+    <div id="order-box">SQUAD: <span id="order-text">FOLLOW</span> <span class="hint">[Q order · X focus]</span></div>
+    <div id="interact-prompt" class="hidden">Hold <b>F</b> — Relight lantern</div>
+    <div id="boss-bar-wrap" class="hidden"><div id="boss-name">THE GLOOM HERALD</div><div id="boss-bar"><div id="boss-fill"></div></div></div>
+  </div>
+
+  <div id="menu-title" class="menu">
+    <div class="menu-inner">
+      <h1 class="game-title">LANTERNFALL</h1>
+      <p class="game-sub">— THE LAST BEACON —</p>
+      <p class="game-desc">Night has swallowed the sky-islands. You are the keeper of the last beacon, with Bram and Sef at your side. Relight the lanterns, hold the tower, and slay the Gloom Herald before the light fades.</p>
+      <div class="diff-row">
+        <button class="diff-btn" data-diff="ember">EMBER · gentle</button>
+        <button class="diff-btn selected" data-diff="flare">FLARE · standard</button>
+        <button class="diff-btn" data-diff="blaze">BLAZE · brutal</button>
+      </div>
+      <button id="btn-start" class="big-btn">LIGHT THE BEACON ▶</button>
+      <p class="best-line">BEST SCORE <span id="best-score">0</span></p>
+      <div class="controls-grid">
+        <div><b>WASD</b> move</div><div><b>Mouse</b> aim</div>
+        <div><b>Click</b> shoot</div><div><b>R</b> reload</div>
+        <div><b>G</b> grenade</div><div><b>F</b> relight / interact</div>
+        <div><b>Q</b> squad order</div><div><b>X</b> focus fire</div>
+        <div><b>Shift</b> sprint</div><div><b>Space</b> jump</div>
+        <div><b>Esc</b> pause</div><div><b>M</b> mute</div>
+      </div>
+      <p class="tip-line">TIP — Fight inside lantern light: +damage, +accuracy, slow healing. Darkness drains you. Grenades resupply at lit lanterns.</p>
+    </div>
+  </div>
+
+  <div id="menu-pause" class="menu hidden">
+    <div class="menu-inner">
+      <h2>PAUSED</h2>
+      <p class="pause-sub">The beacon holds its breath.</p>
+      <label class="slider-row">Volume <input id="vol-slider" type="range" min="0" max="100" value="70"></label>
+      <label class="slider-row">Mouse sensitivity <input id="sens-slider" type="range" min="20" max="200" value="100"></label>
+      <button id="btn-resume" class="big-btn">RESUME ▶</button>
+      <button id="btn-restart-pause" class="small-btn">Restart run</button>
+      <button id="btn-quit-pause" class="small-btn">Quit to title</button>
+    </div>
+  </div>
+
+  <div id="menu-upgrade" class="menu hidden">
+    <div class="menu-inner">
+      <h2>FIELD UPGRADE</h2>
+      <p class="pause-sub">Choose one — the night will not wait.</p>
+      <div id="upgrade-cards"></div>
+    </div>
+  </div>
+
+  <div id="menu-results" class="menu hidden">
+    <div class="menu-inner">
+      <h2 id="results-title">THE BEACON ENDURES</h2>
+      <p id="results-sub" class="pause-sub">Dawn breaks over the islands.</p>
+      <div id="results-rows"></div>
+      <p class="best-line">BEST SCORE <span id="results-best">0</span></p>
+      <button id="btn-again" class="big-btn">PLAY AGAIN ▶</button>
+      <button id="btn-title-results" class="small-btn">Back to title</button>
+    </div>
+  </div>
+
+  <div id="menu-defeat" class="menu hidden">
+    <div class="menu-inner">
+      <h2>THE LIGHT DIES</h2>
+      <p id="defeat-sub" class="pause-sub">The beacon is dark. The islands fall silent.</p>
+      <div id="defeat-rows"></div>
+      <button id="btn-retry" class="big-btn">TRY AGAIN ▶</button>
+      <button id="btn-title-defeat" class="small-btn">Back to title</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="./src/boot.js"></script>
+</body>
+</html>
